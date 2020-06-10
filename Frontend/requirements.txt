@@ -1,5 +1,5 @@
 Flask==1.1.1
 wtforms
-mysqlclient
+flask_mysqldb
 passlib
 flask_cors

@@ -1,6 +1,6 @@
 from flask import Flask, render_template,request, flash, redirect, url_for, session
 from wtforms import Form, StringField, TextAreaField, PasswordField, validators, SelectField
-from flask_mysqldb import MySQL
+#from flask_mysqldb import MySQL
 from passlib.hash import sha256_crypt
 from functools import wraps
 import requests
@@ -8,20 +8,35 @@ import json
 import datetime
 from flask_cors import CORS
 from datetime import timedelta
+import pymysql
 
 app = Flask(__name__) 
 CORS(app)
 
-app.config['MYSQL_HOST'] = '34.68.237.67'
+'''app.config['MYSQL_HOST'] = '34.68.237.67'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'pass'
 app.config['MYSQL_DB'] = 'Serverless_Users'
-app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
+app.config['MYSQL_CURSORCLASS'] = 'DictCursor' '''
+
+conf = {
+    "host": "34.68.237.67",
+    "port": 3306,
+    "user": "root",
+    "passwd": "pass",
+    "charset": "utf8mb4",
+    "cursorclass": pymysql.cursors.DictCursor,
+    "database": "Serverless_Users"
+}
 app.permanent_session_lifetime = timedelta(minutes=5)
 
-mysql = MySQL(app)
+#mysql = MySQL(app)
 
 TOPICS = [('Topic-1','Topic-1'),('Topic-2','Topic-2')]
+
+loginurl = 'http://192.168.99.100:8083/login'
+registrationurl = 'http://192.168.99.100:8082/register'
+userstatusurl = 'http://192.168.99.100:8084/getUsers'
 
 @app.route('/')
 def index():
@@ -47,7 +62,7 @@ def login():
             'username':username,
             'pwd':password_candidate
         })
-        r = requests.post('http://localhost:5002/login',data=data, headers={"Content-Type":"application/json"})
+        r = requests.post(loginurl,data=data, headers={"Content-Type":"application/json"})
         if r:
             data = json.loads(r.text)
             if(data['message']=='Username not found'):
@@ -91,7 +106,7 @@ def Registration():
             'topic': topic
         })
         #call api
-        r = requests.post('http://localhost:5001/register',data=data,headers={"Content-Type":"application/json"})
+        r = requests.post(registrationurl,data=data,headers={"Content-Type":"application/json"})
         if r:
             data = json.loads(r.text)
             print(data['message'])
@@ -107,7 +122,7 @@ def dashboard():
     data = json.dumps({
         'u_id':session['user_id']
     })
-    r=requests.post('http://localhost:5003/getUsers',data=data,headers={"Content-Type":"application/json"})
+    r=requests.post(userstatusurl,data=data,headers={"Content-Type":"application/json"})
     if r:
         users = json.loads(r.text)
         print(users)
@@ -118,11 +133,13 @@ def dashboard():
 @app.route('/logout')
 @is_logged_in
 def logout():
-    cur = mysql.connection.cursor()
+    #cur = mysql.connection.cursor()
+    cnx=pymysql.connect(**conf)
+    cur = cnx.cursor()
     status = 'OFFLINE'
     cur.execute("UPDATE user_state SET status=%s,timestamp=%s WHERE id=%s",(status,datetime.datetime.now(),session['user_id']))
-    mysql.connection.commit()
-    cur.close()
+    cnx.commit()
+    cnx.close()
     session.clear()
     flash('You are now logged out', 'success')
     return redirect(url_for('login'))

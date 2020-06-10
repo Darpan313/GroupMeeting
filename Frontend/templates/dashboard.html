@@ -1,0 +1,56 @@
+{% extends 'layout.html' %} {% block body %}
+<h1>Dashboard <small> Welcome {{session.username}}</small></h1>
+<h3>
+  <small>
+    Registered to &mdash;
+    <u>
+      {{session.topic}}
+    </u></small
+  >
+</h3>
+<hr />
+<table id="userTable" class="table table-striped">
+  <tr>
+    <th>Username</th>
+    <th>Status</th>
+  </tr>
+  {% for user in users %}
+  <tr>
+    <td>{{user.name}}</td>
+    <td>{{user.status}}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% if session.logged_in != NULL %} {% block scripts %}
+<script>
+  var id = "{{ session.user_id }}";
+  $(function () {
+    setInterval(function () {
+      $.ajax({
+        url: "http://localhost:5003/getUsers",
+        method: "POST",
+        timeout: 0,
+        contentType: "application/json",
+        data: JSON.stringify({ u_id: 1 }),
+        success: function (data) {
+          $("#userTable").find("tr:gt(0)").remove();
+          data = $.parseJSON(data);
+          var chtml = "";
+          for (var i = 0; i < data.length; i++) {
+            console.log(data[i].name);
+            chtml += '<tr id="' + data[i].id + '">';
+            chtml += "<td>" + data[i].name + "</td>";
+            if (data[i].status == "ONLINE") {
+              chtml += "<td style = 'color:green' >" + data[i].status + "</td>";
+            } else {
+              chtml += "<td style = 'color:RED' >" + data[i].status + "</td>";
+            }
+            chtml += "</tr>";
+          }
+          $("#userTable").append(chtml);
+        },
+      });
+    }, 1000);
+  });
+</script>
+{% endblock %} {% endif %} {% endblock %}

@@ -1,0 +1,5 @@
+Flask==1.1.1
+wtforms
+mysqlclient
+passlib
+flask_cors
